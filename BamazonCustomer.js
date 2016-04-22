@@ -120,42 +120,56 @@ function moreItems(){
 	});
 };
 
+function databaseChanges(id, qty){
+	var SQLquery4 = 'INSERT INTO Orders (order_id, product_id_fk, qty) Values ('+
+						currentOrderNumber+', '+id+', '+qty+
+					')';
+	connection.query(SQLquery4, function(err, res){
+		// if error throw error.
+		if (err) throw err;
+	});
+	connection.query('SELECT StockQuantity FROM products WHERE id = '+id, function(err, res){
+		var currentQTY = res[0].StockQuantity;
+		var newQTY = currentQTY - qty;
+		connection.query('UPDATE Products SET StockQuantity = "'+newQTY+'" WHERE id = '+id, function(err, res){
+			// if error throw error.
+			if (err) throw err;
+		});
+	});
+	connection.query('SELECT * FROM products', function(err, res){
+		// if error throw error.
+		if (err) throw err;
+
+		// print out the response as the menu
+		for (var i = 0; i < res.length; i++) {
+			if (id == res[i].id) {
+				console.log(res[i].ProductName +' / '+ res[i].Price +' / '+ qty);
+			}
+		};
+		
+	});
+}
+
 function completeOrder(){
-	console.log('Thank you for your order');
+	console.log('=============================================')
+	console.log('Thank you for your order.');
+
+
+
 	connection.query('SELECT value FROM config WHERE title = "current_order_number"', function(err, res){
 		currentOrderNumber = res[0].value;
+		console.log('The order number is: O-'+currentOrderNumber);
+		console.log('=============================================\n');
+		console.log('PRODUCT NAME  /  PRICE  /  QTY');
 		for (var i = 0; i < order.length; i++) {
-			console.log(order);
 			orderQty = order[i].qty;
 			orderID = order[i].id
-			var SQLquery4 = 'INSERT INTO Orders (order_id, product_id_fk, qty) Values ('+
-								currentOrderNumber+', '+orderID+', '+orderQty+
-							')';
-			connection.query(SQLquery4, function(err, res){
-				// if error throw error.
-				if (err) throw err;
-				// print out contents of the response
-				console.log(res);
-			});
-			connection.query('SELECT StockQuantity FROM products WHERE id = '+orderID, function(err, res){
-				var currentQTY = res[0].StockQuantity;
-
-				var newQTY = currentQTY - orderQty;
-				console.log('newQTY: '+newQTY+' - currentQTY: '+currentQTY+' - orderQty: '+orderQty+' - orderID: '+orderID);
-				connection.query('UPDATE Products SET StockQuantity = "'+newQTY+'" WHERE id = '+orderID, function(err, res){
-					// if error throw error.
-					if (err) throw err;
-					// print out contents of the response
-					console.log(res);
-				});
-			});
+			databaseChanges(orderID,orderQty);
 		}
 		currentOrderNumber++
 		connection.query('UPDATE config SET value = "'+currentOrderNumber+'" WHERE title = "current_order_number"', function(err, res){
 			// if error throw error.
 			if (err) throw err;
-			// print out contents of the response
-			console.log(res);
 		});
 	});
 };
