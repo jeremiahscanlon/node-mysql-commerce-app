@@ -27,6 +27,8 @@ connection.connect(function(err){
 // ============================================================
 var order = [];
 var currentOrderNumber;
+var orderQty = '';
+var orderID = '';
 
 // ============================================================
 // Get all Products from MySQL
@@ -123,8 +125,11 @@ function completeOrder(){
 	connection.query('SELECT value FROM config WHERE title = "current_order_number"', function(err, res){
 		currentOrderNumber = res[0].value;
 		for (var i = 0; i < order.length; i++) {
+			console.log(order);
+			orderQty = order[i].qty;
+			orderID = order[i].id
 			var SQLquery4 = 'INSERT INTO Orders (order_id, product_id_fk, qty) Values ('+
-								currentOrderNumber+', '+order[i].id+', '+order[i].qty+
+								currentOrderNumber+', '+orderID+', '+orderQty+
 							')';
 			connection.query(SQLquery4, function(err, res){
 				// if error throw error.
@@ -132,10 +137,28 @@ function completeOrder(){
 				// print out contents of the response
 				console.log(res);
 			});
+			connection.query('SELECT StockQuantity FROM products WHERE id = '+orderID, function(err, res){
+				var currentQTY = res[0].StockQuantity;
+
+				var newQTY = currentQTY - orderQty;
+				console.log('newQTY: '+newQTY+' - currentQTY: '+currentQTY+' - orderQty: '+orderQty+' - orderID: '+orderID);
+				connection.query('UPDATE Products SET StockQuantity = "'+newQTY+'" WHERE id = '+orderID, function(err, res){
+					// if error throw error.
+					if (err) throw err;
+					// print out contents of the response
+					console.log(res);
+				});
+			});
 		}
-		
+		currentOrderNumber++
+		connection.query('UPDATE config SET value = "'+currentOrderNumber+'" WHERE title = "current_order_number"', function(err, res){
+			// if error throw error.
+			if (err) throw err;
+			// print out contents of the response
+			console.log(res);
+		});
 	});
-}
+};
 
 // ============================================================
 // Get all Products from MySQL to start the process
