@@ -19,6 +19,141 @@ connection.connect(function(err){
 		return;
 	}
 	// if not error console.log connected
-	console.log('connected as id: ' + connection.threadID);
+	console.log('connected as id: ' + connection.threadId);
 });
 
+// ============================================================
+// Universal Variables to hold data
+// ============================================================
+var order = [];
+var currentOrderNumber;
+
+// ============================================================
+// Get all Products from MySQL
+// ============================================================
+
+// create function for prompt to be used later
+function orderCapture(){
+
+	// create a schema for the prompt, so we can enter a more complete questions.
+	var schema = {
+		properties: {
+			product: {
+				description: 'Please choose a product by entering it\'s line number',
+				required: true
+			},
+			qty:{
+				description: 'How many would you like to order?',
+				required: true
+			}
+		}
+	};
+
+	// prompt the questions and log the answers
+	prompt.get(schema, function(err,res){
+		
+		// create variables out of the prompted results
+		var productID = res.product;
+		var qty = res.qty;
+		var SQLquery3 = 'SELECT StockQuantity FROM products WHERE id = '+productID;
+
+		connection.query(SQLquery3, function(err, res){
+			if (res[0].StockQuantity > qty) {
+
+				var lineItem = {
+					id: productID,
+					qty: qty
+				};
+
+				// add the object to the order array
+				order.push(lineItem);
+
+				// call the function that asks customer if they want to add more products
+				moreItems();
+
+			} else {
+
+				// let the customer their options.
+				console.log('That product does not exist in that qty. Please try a smaller qty or choose a different product.')
+				orderCapture();				
+
+			};
+		});
+	});
+};
+
+// create a new function that prompts user to see if they want to add additional items.
+function moreItems(){
+
+	// create a schema for the prompt, so we can enter a more complete questions.
+	var schema = {
+		properties: {
+			answer: {
+				description: 'Would you like to add more items to your order? (y/n)',
+				required: true
+			}
+		}
+	};
+
+	// ask the question to see if they want more products
+	prompt.get(schema, function(err,res){
+
+		// turn the answer into a variable
+		var answer = res.answer;
+
+		// check to see if the answer is a string of y or n
+		if(answer == 'y' || answer == 'n') {
+			if (answer == 'y'){
+				// if they want to add more products then run the main prompt again
+				orderCapture();
+			} else {
+				// if they don't want to add more items then just finish the order
+				completeOrder();
+			}
+		} else {
+			// if it's not y or n give them a note and restart the prompt, so they can try again.
+			console.log('Sorry, we can only understand "y" for Yes or "n" for No. Please try again ...');
+			moreItems();
+		}
+	});
+};
+
+function completeOrder(){
+	console.log('Thank you for your order');
+	connection.query('SELECT value FROM config WHERE title = "current_order_number"', function(err, res){
+		currentOrderNumber = res[0].value;
+		for (var i = 0; i < order.length; i++) {
+			var SQLquery4 = 'INSERT INTO Orders (order_id, product_id_fk, qty) Values ('+
+								currentOrderNumber+', '+order[i].id+', '+order[i].qty+
+							')';
+			connection.query(SQLquery4, function(err, res){
+				// if error throw error.
+				if (err) throw err;
+				// print out contents of the response
+				console.log(res);
+			});
+		}
+		
+	});
+}
+
+// ============================================================
+// Get all Products from MySQL to start the process
+// ============================================================
+
+connection.query('SELECT * FROM products', function(err, res){
+	// if error throw error.
+	if (err) throw err;
+
+	// print out the response as the menu
+	console.log('=============================================')
+	console.log('   Product Price and Availabilit y List')
+	console.log('=============================================')
+	for (var i = 0; i < res.length; i++) {
+		console.log(res[i].id +' = '+res[i].ProductName +' / PRICE: '+res[i].Price+' / QTY Availaible: '+res[i].StockQuantity);
+	}
+
+	// start the prompt to capture the order
+	orderCapture();
+	
+});
