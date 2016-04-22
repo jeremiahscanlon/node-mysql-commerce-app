@@ -1,0 +1,23 @@
+{
+  "name": "node-mysql-commerce-app",
+  "version": "1.0.0",
+  "description": "Node and Mysql Commerce App Test",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeremiahscanlon/node-mysql-commerce-app.git"
+  },
+  "author": "Jeremiah Scanlon",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jeremiahscanlon/node-mysql-commerce-app/issues"
+  },
+  "homepage": "https://github.com/jeremiahscanlon/node-mysql-commerce-app#readme",
+  "dependencies": {
+    "mysql": "^2.10.2",
+    "prompt": "^1.0.0"
+  }
+}
